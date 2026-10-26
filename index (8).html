@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trading Calendrier – annonces économiques</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mut:#6b7280;--bd:#e1e4e8;--ac:#ea580c;--acbg:#ffedd5;--ok:#15803d;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mut:#9aa3af;--bd:#2a303a;--ac:#fb923c;--acbg:#3b2212;--ok:#4ade80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mut:#9aa3af;--bd:#2a303a;--ac:#fb923c;--acbg:#3b2212;--ok:#4ade80;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:16px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+h1{font-size:22px;margin:0}
+select,label{font:inherit;color:var(--tx)}
+select{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:6px 8px}
+.next{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;text-align:center;margin-bottom:14px}
+.next.hot{border-color:var(--ac);background:var(--acbg)}
+.next small{color:var(--mut)}
+.next .name{font-size:24px;font-weight:700;margin:2px 0}
+.next .cd{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ac)}
+.warn{display:none;margin-top:6px;font-weight:600;color:var(--ac)}
+.day{margin:16px 0 6px;font-size:13px;color:var(--mut);text-transform:capitalize;font-weight:600}
+.ev{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.ev.past{opacity:.5}
+.ev .t{font-size:18px;font-weight:700;min-width:58px;font-variant-numeric:tabular-nums}
+.ev .n{flex:1;font-weight:600}
+.ev .n small{display:block;color:var(--mut);font-weight:400}
+.ev .c{color:var(--mut);font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.opt{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:13px;margin-top:8px}
+.foot{color:var(--mut);font-size:12px;margin-top:22px}
+.foot a{color:var(--ac)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>🔴 Trading Calendrier</h1>
+    <select id="tz" aria-label="Fuseau horaire">
+      <option value="Europe/Brussels">Bruxelles</option>
+      <option value="Europe/Paris">Paris</option>
+      <option value="Europe/London">Londres</option>
+      <option value="America/New_York">New York</option>
+      <option value="UTC">UTC</option>
+    </select>
+  </div>
+
+  <div class="next" id="next">
+    <small>Prochaine annonce</small>
+    <div class="name" id="nName">…</div>
+    <div id="nWhen" style="color:var(--mut)"></div>
+    <div class="cd" id="nCd">–</div>
+    <div class="warn" id="warn">⚠️ Fenêtre de volatilité : 15 min avant, 30 min après</div>
+  </div>
+
+  <div class="opt"><label><input type="checkbox" id="past"> Afficher les annonces passées</label></div>
+  <div id="list"></div>
+
+  <div class="foot">
+    Heures officielles en heure de New York, converties dans le fuseau choisi (heure d’été et d’hiver comprises). NFP calculé automatiquement : 1er vendredi du mois, 08:30 (à vérifier les mois avec jour férié). Dates à vérifier sur
+    <a href="https://www.bls.gov/schedule/" target="_blank" rel="noopener">bls.gov</a> et
+    <a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">federalreserve.gov</a>.
+    Ceci n’est pas un conseil financier.
+  </div>
+</div>
+
+<script>
+// ───── À MODIFIER : une ligne par annonce, heure de New York ─────
+// d = date AAAA-MM-JJ, t = heure HH:MM (New York), n = nom
+const EVENTS = [
+  { d: "2026-10-28", t: "14:00", n: "FOMC" },
+  { d: "2026-11-10", t: "08:30", n: "CPI" },
+  { d: "2026-11-13", t: "08:30", n: "PPI" },   // à confirmer sur bls.gov
+  { d: "2026-12-09", t: "14:00", n: "FOMC" },
+  { d: "2026-12-10", t: "08:30", n: "CPI" },
+  { d: "2026-12-15", t: "08:30", n: "PPI" }
+];
+const AUTO_NFP = true; // 1er vendredi du mois à 08:30 (New York)
+// ────────────────────────────────────────────────────────────────
+
+const $ = s => document.querySelector(s);
+const NY = "America/New_York";
+
+function tzOffset(date, tz) {
+  const p = {};
+  new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    .formatToParts(date).forEach(x => p[x.type] = x.value);
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - date.getTime();
+}
+function zonedToUTC(y, m, d, h, mi, tz) {
+  const t = Date.UTC(y, m - 1, d, h, mi);
+  let r = t - tzOffset(new Date(t), tz);
+  const o2 = tzOffset(new Date(r), tz);
+  return t - o2;
+}
+function buildEvents() {
+  const out = [];
+  EVENTS.forEach(e => {
+    const [y, m, d] = e.d.split("-").map(Number), [h, mi] = e.t.split(":").map(Number);
+    out.push({ ts: zonedToUTC(y, m, d, h, mi, NY), n: e.n, ny: e.t });
+  });
+  if (AUTO_NFP) {
+    const now = new Date();
+    for (let k = -1; k < 14; k++) {
+      const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1));
+      const y = base.getUTCFullYear(), m = base.getUTCMonth() + 1;
+      for (let d = 1; d <= 7; d++) {
+        if (new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 5) { out.push({ ts: zonedToUTC(y, m, d, 8, 30, NY), n: "NFP", ny: "08:30" }); break; }
+      }
+    }
+  }
+  return out.sort((a, b) => a.ts - b.ts);
+}
+const ALL = buildEvents();
+
+let tz = "Europe/Brussels";
+try { tz = localStorage.getItem("tc_tz") || tz; } catch (e) {}
+$("#tz").value = tz;
+$("#tz").addEventListener("change", () => { tz = $("#tz").value; try { localStorage.setItem("tc_tz", tz); } catch (e) {} render(); });
+$("#past").addEventListener("change", render);
+
+function cd(ms) {
+  const s = Math.floor(Math.abs(ms) / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+  const p = n => String(n).padStart(2, "0");
+  return (d ? d + "j " : "") + p(h) + ":" + p(m) + ":" + p(x);
+}
+function short(ms) {
+  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60);
+  return d ? "dans " + d + "j " + h + "h" : h ? "dans " + h + "h " + (m % 60) + "m" : "dans " + m + " min";
+}
+function render() {
+  const now = Date.now(), showPast = $("#past").checked;
+  const dayFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, weekday: "long", day: "numeric", month: "long" });
+  const hrFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const list = $("#list"); list.innerHTML = "";
+  let last = "";
+  ALL.filter(e => showPast ? e.ts > now - 14 * 86400000 : e.ts > now - 30 * 60000).forEach(e => {
+    const dk = dayFmt.format(e.ts);
+    if (dk !== last) { const h = document.createElement("div"); h.className = "day"; h.textContent = dk; list.appendChild(h); last = dk; }
+    const r = document.createElement("div"); r.className = "ev" + (e.ts < now ? " past" : "");
+    const t = document.createElement("div"); t.className = "t"; t.textContent = hrFmt.format(e.ts);
+    const n = document.createElement("div"); n.className = "n"; n.textContent = "🔴 " + e.n;
+    const s = document.createElement("small"); s.textContent = e.ny + " à New York"; n.appendChild(s);
+    const c = document.createElement("div"); c.className = "c"; c.dataset.ts = e.ts;
+    r.append(t, n, c); list.appendChild(r);
+  });
+  if (!list.children.length) list.innerHTML = '<div class="foot">Aucune annonce à venir. Ajoute-en dans la liste EVENTS du fichier index.html.</div>';
+  tick();
+}
+function tick() {
+  const now = Date.now();
+  document.querySelectorAll(".c").forEach(c => { const d = c.dataset.ts - now; c.textContent = d > 0 ? short(d) : (d > -30 * 60000 ? "en cours" : "passé"); });
+  const nx = ALL.find(e => e.ts + 30 * 60000 > now);
+  const box = $("#next");
+  if (!nx) { $("#nName").textContent = "Aucune annonce"; $("#nCd").textContent = "–"; $("#nWhen").textContent = ""; return; }
+  const d = nx.ts - now, hot = d < 15 * 60000 && d > -30 * 60000;
+  $("#nName").textContent = "🔴 " + nx.n;
+  $("#nWhen").textContent = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(nx.ts);
+  $("#nCd").textContent = d > 0 ? cd(d) : "en cours (+" + cd(d) + ")";
+  $("#warn").style.display = hot ? "block" : "none";
+  box.classList.toggle("hot", hot);
+}
+render();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
