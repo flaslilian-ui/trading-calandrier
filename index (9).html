@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trading Calendrier & Journal</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mut:#6b7280;--bd:#e1e4e8;--ac:#ea580c;--acbg:#ffedd5;--bl:#2563eb;--g:#15803d;--gbg:#d9f6e3;--r:#b91c1c;--rbg:#fde0e0;--n:#4b5563;--nbg:#e5e7eb;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mut:#9aa3af;--bd:#2a303a;--ac:#fb923c;--acbg:#3b2212;--bl:#60a5fa;--g:#4ade80;--gbg:#12341f;--r:#f87171;--rbg:#3d1719;--n:#9aa3af;--nbg:#262b33;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e1116;--card:#171b22;--tx:#e8eaed;--mut:#9aa3af;--bd:#2a303a;--ac:#fb923c;--acbg:#3b2212;--bl:#60a5fa;--g:#4ade80;--gbg:#12341f;--r:#f87171;--rbg:#3d1719;--n:#9aa3af;--nbg:#262b33;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0}
+h2{font-size:16px;margin:0 0 10px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;font:inherit;font-weight:600;padding:11px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer}
+.tabs button.on{background:var(--bl);border-color:var(--bl);color:#fff}
+input,select,textarea{width:100%;font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px}
+select.sm{width:auto;background:var(--card)}
+textarea{min-height:64px;resize:vertical}
+label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px}
+.btn{font:inherit;border:0;border-radius:8px;padding:10px 16px;background:var(--bl);color:#fff;cursor:pointer;font-weight:600}
+.btn.ghost{background:var(--bg);color:var(--tx);border:1px solid var(--bd)}
+.badge{font-size:12px;color:var(--mut);border:1px solid var(--bd);border-radius:99px;padding:3px 10px;background:var(--card)}
+/* calendrier */
+#cal .in{max-width:760px;margin:0 auto}
+.next{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:18px;text-align:center;margin-bottom:14px}
+.next.hot{border-color:var(--ac);background:var(--acbg)}
+.next small{color:var(--mut)}
+.next .name{font-size:24px;font-weight:700;margin:2px 0}
+.next .cd{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ac)}
+.warn{display:none;margin-top:6px;font-weight:600;color:var(--ac)}
+.day{margin:16px 0 6px;font-size:13px;color:var(--mut);text-transform:capitalize;font-weight:600}
+.ev{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.ev.past{opacity:.5}
+.ev .t{font-size:18px;font-weight:700;min-width:58px;font-variant-numeric:tabular-nums}
+.ev .n{flex:1;font-weight:600}
+.ev .n small{display:block;color:var(--mut);font-weight:400}
+.ev .cdc{color:var(--mut);font-size:13px;white-space:nowrap}
+.opt{display:flex;gap:14px;align-items:center;flex-wrap:wrap;color:var(--mut);font-size:13px;margin-bottom:6px}
+.opt input{width:auto}
+.foot{color:var(--mut);font-size:12px;margin-top:22px}
+.foot a{color:var(--ac)}
+/* journal */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.stat small{color:var(--mut);display:block;font-size:12px}
+.stat b{font-size:20px}
+.stat input{width:90px;font-weight:700;font-size:20px;background:transparent;border:0;border-bottom:1px dashed var(--bd);padding:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;font:inherit;padding:9px 6px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);cursor:pointer}
+.seg button.on[data-r="win"]{background:var(--gbg);border-color:var(--g);color:var(--g);font-weight:700}
+.seg button.on[data-r="loss"]{background:var(--rbg);border-color:var(--r);color:var(--r);font-weight:700}
+.seg button.on[data-r="be"]{background:var(--nbg);border-color:var(--n);color:var(--n);font-weight:700}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+@media(max-width:560px){.two{grid-template-columns:1fr}}
+.drop{margin-top:10px;border:1px dashed var(--bd);border-radius:10px;padding:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.drop input{width:auto}
+.drop img{max-height:70px;border-radius:6px;display:none}
+.scroll{overflow-x:auto}
+table{border-collapse:separate;border-spacing:0 6px;width:100%;min-width:760px}
+th{font-size:12px;color:var(--mut);text-align:left;padding:0 8px;font-weight:600}
+td{padding:8px;background:var(--card);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd);vertical-align:middle}
+td:first-child{border-left:1px solid var(--bd);border-radius:10px 0 0 10px}
+td:last-child{border-right:1px solid var(--bd);border-radius:0 10px 10px 0}
+td.win{background:var(--gbg);color:var(--g);font-weight:700;white-space:nowrap}
+td.loss{background:var(--rbg);color:var(--r);font-weight:700;white-space:nowrap}
+td.be{background:var(--nbg);color:var(--n);font-weight:700;white-space:nowrap}
+.thumb{height:44px;width:70px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--bd)}
+.pos{color:var(--g)}.neg{color:var(--r)}
+.note{font-size:13px;max-width:280px;white-space:pre-wrap;word-break:break-word}
+.x{background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}
+.empty{color:var(--mut);text-align:center;padding:22px}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9;padding:16px}
+#lb img{max-width:100%;max-height:100%;border-radius:8px}
+#toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#111;color:#fff;padding:8px 14px;border-radius:8px;display:none;z-index:10;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1>🔴 Trading Calendrier &amp; Journal</h1></div>
+  <div class="tabs">
+    <button data-tab="cal" class="on">📅 Calendrier</button>
+    <button data-tab="jr">📒 Journal</button>
+  </div>
+
+  <!-- ============ CALENDRIER ============ -->
+  <section id="cal"><div class="in">
+    <div class="top" style="margin-bottom:10px"><span class="badge">Fuseau d’affichage</span>
+      <select id="tz" class="sm" aria-label="Fuseau horaire">
+        <option value="Europe/Brussels">Bruxelles</option><option value="Europe/Paris">Paris</option>
+        <option value="Europe/London">Londres</option><option value="America/New_York">New York</option><option value="UTC">UTC</option>
+      </select></div>
+    <div class="next" id="next">
+      <small>Prochaine annonce</small>
+      <div class="name" id="nName">…</div>
+      <div id="nWhen" style="color:var(--mut)"></div>
+      <div class="cd" id="nCd">–</div>
+      <div class="warn" id="warn">⚠️ Fenêtre de volatilité : 15 min avant, 30 min après</div>
+    </div>
+    <div class="opt"><label style="margin:0"><input type="checkbox" id="past"> Afficher les annonces passées</label></div>
+    <div id="list"></div>
+    <div class="foot">
+      Heures officielles en heure de New York, converties dans le fuseau choisi (heure d’été et d’hiver comprises). NFP calculé automatiquement : 1er vendredi du mois, 08:30 (à vérifier les mois avec jour férié). Dates à vérifier sur
+      <a href="https://www.bls.gov/schedule/" target="_blank" rel="noopener">bls.gov</a> et
+      <a href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm" target="_blank" rel="noopener">federalreserve.gov</a>.
+      Ceci n’est pas un conseil financier.
+    </div>
+  </div></section>
+
+  <!-- ============ JOURNAL ============ -->
+  <section id="jr" hidden>
+    <div class="stats">
+      <div class="stat"><small>Capital actuel</small><b id="sCap">–</b></div>
+      <div class="stat"><small>Capital de départ ($)</small><input id="start" type="number" step="1" min="0" value="300"></div>
+      <div class="stat"><small>Résultat total</small><b id="sPnl">–</b></div>
+      <div class="stat"><small>Trades</small><b id="sN">0</b></div>
+      <div class="stat"><small>Taux de réussite</small><b id="sWr">–</b></div>
+      <div class="stat"><small>Profit factor</small><b id="sPf">–</b></div>
+    </div>
+
+    <div class="card">
+      <h2>Nouveau trade</h2>
+      <div class="grid">
+        <div><label>Date et heure</label><input id="ts" type="datetime-local"></div>
+        <div><label>Actif</label><input id="asset" list="assets" value="XAUUSD"><datalist id="assets"><option>XAUUSD</option><option>EURUSD</option><option>GBPUSD</option><option>USDJPY</option><option>NAS100</option><option>US30</option><option>BTCUSD</option></datalist></div>
+        <div><label>Unité de temps</label><select id="tf"><option>M1</option><option>M3</option><option>M5</option><option selected>M15</option><option>M30</option><option>H1</option><option>H4</option><option>D1</option></select></div>
+        <div><label>Sens</label><select id="side"><option>Achat</option><option>Vente</option></select></div>
+        <div><label>Lot</label><input id="lot" type="number" step="0.01" min="0" value="0.01"></div>
+        <div><label>Montant du résultat ($)</label><input id="amt" type="number" step="0.01" min="0" placeholder="ex. 20"></div>
+      </div>
+      <div style="margin-top:10px"><label>Bilan du trade</label>
+        <div class="seg" id="seg"><button type="button" data-r="win" class="on">✅ Positif</button><button type="button" data-r="loss">❌ Négatif</button><button type="button" data-r="be">➖ Break even</button></div>
+      </div>
+      <div class="two">
+        <div><label>✅ Points positifs (ce qui était bien)</label><textarea id="good"></textarea></div>
+        <div><label>❌ Points négatifs (à corriger)</label><textarea id="bad"></textarea></div>
+      </div>
+      <div class="drop">
+        <input id="file" type="file" accept="image/*">
+        <span style="color:var(--mut);font-size:13px">ou colle une capture (Ctrl+V)</span>
+        <img id="prev" alt="Aperçu">
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="add">Enregistrer le trade</button><button class="btn ghost" id="reset" type="button">Vider</button></div>
+    </div>
+
+    <div class="card">
+      <div class="top" style="margin:0 0 8px"><h2 style="margin:0">Historique</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select id="flt" class="sm"><option value="">Tous les actifs</option></select>
+          <button class="btn ghost" id="exp" type="button">⬇️ Sauvegarder</button>
+          <button class="btn ghost" id="imp" type="button">⬆️ Restaurer</button>
+          <input id="impf" type="file" accept="application/json" hidden>
+        </div></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Date</th><th>Actif</th><th>TF</th><th>Sens</th><th>Lot</th><th>Résultat</th><th>Image</th><th>Bilan</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table></div>
+      <div class="empty" id="empty">Aucun trade enregistré pour l’instant.</div>
+      <div class="foot">Tes trades sont enregistrés dans ce navigateur, sur cet appareil. Utilise « Sauvegarder » pour garder une copie.</div>
+    </div>
+  </section>
+</div>
+<div id="lb"><img alt=""></div>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; setTimeout(() => t.style.display = "none", 3200); }
+
+/* ---------- onglets ---------- */
+function showTab(id) {
+  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === id));
+  $("#cal").hidden = id !== "cal"; $("#jr").hidden = id !== "jr";
+  try { history.replaceState(null, "", id === "jr" ? "#journal" : "#"); } catch (e) {}
+}
+document.querySelectorAll(".tabs button").forEach(b => b.addEventListener("click", () => showTab(b.dataset.tab)));
+if (location.hash === "#journal") showTab("jr");
+
+/* =================================================================
+   CALENDRIER
+   ================================================================= */
+(function () {
+  // ───── À MODIFIER : une ligne par annonce, heure de New York ─────
+  const EVENTS = [
+    { d: "2026-10-28", t: "14:00", n: "FOMC" },
+    { d: "2026-11-10", t: "08:30", n: "CPI" },
+    { d: "2026-11-13", t: "08:30", n: "PPI" },   // à confirmer sur bls.gov
+    { d: "2026-12-09", t: "14:00", n: "FOMC" },
+    { d: "2026-12-10", t: "08:30", n: "CPI" },
+    { d: "2026-12-15", t: "08:30", n: "PPI" }
+  ];
+  const AUTO_NFP = true; // 1er vendredi du mois à 08:30 (New York)
+  // ────────────────────────────────────────────────────────────────
+  const NY = "America/New_York";
+  function tzOffset(date, tz) {
+    const p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+      .formatToParts(date).forEach(x => p[x.type] = x.value);
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - date.getTime();
+  }
+  function zonedToUTC(y, m, d, h, mi, tz) {
+    const t = Date.UTC(y, m - 1, d, h, mi);
+    const r = t - tzOffset(new Date(t), tz);
+    return t - tzOffset(new Date(r), tz);
+  }
+  const ALL = (function () {
+    const out = [];
+    EVENTS.forEach(e => {
+      const [y, m, d] = e.d.split("-").map(Number), [h, mi] = e.t.split(":").map(Number);
+      out.push({ ts: zonedToUTC(y, m, d, h, mi, NY), n: e.n, ny: e.t });
+    });
+    if (AUTO_NFP) {
+      const now = new Date();
+      for (let k = -1; k < 14; k++) {
+        const b = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1));
+        const y = b.getUTCFullYear(), m = b.getUTCMonth() + 1;
+        for (let d = 1; d <= 7; d++) if (new Date(Date.UTC(y, m - 1, d)).getUTCDay() === 5) { out.push({ ts: zonedToUTC(y, m, d, 8, 30, NY), n: "NFP", ny: "08:30" }); break; }
+      }
+    }
+    return out.sort((a, b) => a.ts - b.ts);
+  })();
+
+  let tz = "Europe/Brussels";
+  try { tz = localStorage.getItem("tc_tz") || tz; } catch (e) {}
+  $("#tz").value = tz;
+  $("#tz").addEventListener("change", () => { tz = $("#tz").value; try { localStorage.setItem("tc_tz", tz); } catch (e) {} render(); });
+  $("#past").addEventListener("change", render);
+
+  const p2 = n => String(n).padStart(2, "0");
+  function cd(ms) { const s = Math.floor(Math.abs(ms) / 1000), d = Math.floor(s / 86400); return (d ? d + "j " : "") + p2(Math.floor(s % 86400 / 3600)) + ":" + p2(Math.floor(s % 3600 / 60)) + ":" + p2(s % 60); }
+  function short(ms) { const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60); return d ? "dans " + d + "j " + h + "h" : h ? "dans " + h + "h " + (m % 60) + "m" : "dans " + m + " min"; }
+  function render() {
+    const now = Date.now(), showPast = $("#past").checked;
+    const dayFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, weekday: "long", day: "numeric", month: "long" });
+    const hrFmt = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    const list = $("#list"); list.innerHTML = ""; let last = "";
+    ALL.filter(e => showPast ? e.ts > now - 14 * 86400000 : e.ts > now - 30 * 60000).forEach(e => {
+      const dk = dayFmt.format(e.ts);
+      if (dk !== last) { const h = document.createElement("div"); h.className = "day"; h.textContent = dk; list.appendChild(h); last = dk; }
+      const r = document.createElement("div"); r.className = "ev" + (e.ts < now ? " past" : "");
+      const t = document.createElement("div"); t.className = "t"; t.textContent = hrFmt.format(e.ts);
+      const n = document.createElement("div"); n.className = "n"; n.textContent = "🔴 " + e.n;
+      const s = document.createElement("small"); s.textContent = e.ny + " à New York"; n.appendChild(s);
+      const c = document.createElement("div"); c.className = "cdc"; c.dataset.ts = e.ts;
+      r.append(t, n, c); list.appendChild(r);
+    });
+    if (!list.children.length) list.innerHTML = '<div class="foot">Aucune annonce à venir. Ajoute-en dans la liste EVENTS du fichier index.html.</div>';
+    tick();
+  }
+  function tick() {
+    const now = Date.now();
+    document.querySelectorAll(".cdc").forEach(c => { const d = c.dataset.ts - now; c.textContent = d > 0 ? short(d) : (d > -30 * 60000 ? "en cours" : "passé"); });
+    const nx = ALL.find(e => e.ts + 30 * 60000 > now);
+    if (!nx) { $("#nName").textContent = "Aucune annonce"; $("#nCd").textContent = "–"; $("#nWhen").textContent = ""; return; }
+    const d = nx.ts - now, hot = d < 15 * 60000 && d > -30 * 60000;
+    $("#nName").textContent = "🔴 " + nx.n;
+    $("#nWhen").textContent = new Intl.DateTimeFormat("fr-FR", { timeZone: tz, weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(nx.ts);
+    $("#nCd").textContent = d > 0 ? cd(d) : "en cours (+" + cd(d) + ")";
+    $("#warn").style.display = hot ? "block" : "none";
+    $("#next").classList.toggle("hot", hot);
+  }
+  render(); setInterval(tick, 1000);
+})();
+
+/* =================================================================
+   JOURNAL (enregistré dans le navigateur)
+   ================================================================= */
+(function () {
+  const LS = "journal_trading_v1";
+  let trades = [], cfg = { start: 300 }, img = "", res = "win";
+  const money = n => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toFixed(2) + " $";
+  function nowLocal() { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 16); }
+  function read() { try { const o = JSON.parse(localStorage.getItem(LS) || "{}"); trades = o.t || []; cfg = o.c || { start: 300 }; } catch (e) {} }
+  function write() { try { localStorage.setItem(LS, JSON.stringify({ t: trades, c: cfg })); return true; } catch (e) { toast("Stockage plein : supprime des images ou sauvegarde"); return false; } }
+
+  function toJpeg(file) {
+    return new Promise((ok, ko) => {
+      const r = new FileReader();
+      r.onload = () => {
+        const im = new Image();
+        im.onload = () => {
+          let w = 900, q = 0.65, out; const c = document.createElement("canvas");
+          for (let i = 0; i < 7; i++) {
+            const sc = Math.min(1, w / im.width); c.width = im.width * sc; c.height = im.height * sc;
+            c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+            out = c.toDataURL("image/jpeg", q); if (out.length < 100000) break; w *= 0.8; q *= 0.9;
+          }
+          ok(out);
+        };
+        im.onerror = ko; im.src = r.result;
+      };
+      r.onerror = ko; r.readAsDataURL(file);
+    });
+  }
+  async function setImg(file) { try { img = await toJpeg(file); const p = $("#prev"); p.src = img; p.style.display = "block"; } catch (e) { toast("Image illisible"); } }
+  $("#file").addEventListener("change", e => { if (e.target.files[0]) setImg(e.target.files[0]); });
+  document.addEventListener("paste", e => { if ($("#jr").hidden) return; for (const it of (e.clipboardData || {}).items || []) if (it.type.indexOf("image") === 0) { setImg(it.getAsFile()); break; } });
+
+  document.querySelectorAll("#seg button").forEach(b => b.addEventListener("click", () => { res = b.dataset.r; document.querySelectorAll("#seg button").forEach(x => x.classList.toggle("on", x === b)); }));
+  function clearForm() { $("#ts").value = nowLocal(); $("#amt").value = ""; $("#good").value = ""; $("#bad").value = ""; img = ""; $("#prev").style.display = "none"; $("#file").value = ""; }
+  $("#reset").addEventListener("click", clearForm);
+  $("#add").addEventListener("click", () => {
+    const asset = $("#asset").value.trim().toUpperCase();
+    if (!asset) { toast("Indique l’actif"); return; }
+    let amt = parseFloat($("#amt").value); if (isNaN(amt)) amt = 0;
+    if (res !== "be" && amt === 0) { toast("Indique le montant du résultat"); return; }
+    const pnl = res === "win" ? Math.abs(amt) : res === "loss" ? -Math.abs(amt) : 0;
+    const t = { id: "t" + Date.now(), ts: $("#ts").value || nowLocal(), asset, tf: $("#tf").value, side: $("#side").value, lot: parseFloat($("#lot").value) || 0, res, pnl, good: $("#good").value.trim(), bad: $("#bad").value.trim(), img };
+    trades.push(t);
+    if (!write()) { trades.pop(); return; }
+    clearForm(); render(); toast("Trade enregistré");
+  });
+  $("#start").addEventListener("change", () => { cfg = { start: parseFloat($("#start").value) || 0 }; write(); render(); });
+  $("#flt").addEventListener("change", render);
+
+  $("#exp").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify({ t: trades, c: cfg })], { type: "application/json" }));
+    a.download = "journal-trading-" + nowLocal().slice(0, 10) + ".json"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  });
+  $("#imp").addEventListener("click", () => $("#impf").click());
+  $("#impf").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const o = JSON.parse(r.result); if (!Array.isArray(o.t)) throw 0;
+        const ids = new Set(trades.map(x => x.id)); o.t.forEach(x => { if (!ids.has(x.id)) trades.push(x); });
+        if (o.c) cfg = o.c; write(); render(); toast("Sauvegarde restaurée");
+      } catch (err) { toast("Fichier invalide"); }
+    };
+    r.readAsText(f); e.target.value = "";
+  });
+
+  const lb = $("#lb"); lb.addEventListener("click", () => lb.style.display = "none");
+  function cell(tr, text, cls) { const td = document.createElement("td"); td.textContent = text; if (cls) td.className = cls; tr.appendChild(td); }
+  function render() {
+    $("#start").value = cfg.start;
+    const sel = $("#flt"), cur = sel.value, assets = [...new Set(trades.map(t => t.asset))].sort();
+    sel.innerHTML = ""; sel.add(new Option("Tous les actifs", "")); assets.forEach(a => sel.add(new Option(a, a))); sel.value = assets.includes(cur) ? cur : "";
+    const f = sel.value, list = trades.filter(t => !f || t.asset === f).sort((a, b) => b.ts.localeCompare(a.ts));
+    const pnl = trades.reduce((s, t) => s + t.pnl, 0), w = trades.filter(t => t.res === "win"), l = trades.filter(t => t.res === "loss");
+    const gw = w.reduce((s, t) => s + t.pnl, 0), gl = Math.abs(l.reduce((s, t) => s + t.pnl, 0)), cap = cfg.start + pnl;
+    const sc = $("#sCap"); sc.textContent = cap.toFixed(2) + " $"; sc.className = cap >= cfg.start ? "pos" : "neg";
+    const sp = $("#sPnl"); sp.textContent = money(pnl); sp.className = pnl > 0 ? "pos" : pnl < 0 ? "neg" : "";
+    $("#sN").textContent = trades.length;
+    $("#sWr").textContent = (w.length + l.length) ? Math.round(w.length / (w.length + l.length) * 100) + " %" : "–";
+    $("#sPf").textContent = gl > 0 ? (gw / gl).toFixed(2) : (gw > 0 ? "∞" : "–");
+    const tb = $("#rows"); tb.innerHTML = ""; $("#empty").style.display = list.length ? "none" : "block";
+    list.forEach(t => {
+      const tr = document.createElement("tr");
+      cell(tr, t.ts.replace("T", " ")); cell(tr, t.asset); cell(tr, t.tf); cell(tr, t.side); cell(tr, t.lot.toFixed(2));
+      cell(tr, (t.res === "win" ? "✅ " : t.res === "loss" ? "❌ " : "➖ ") + money(t.pnl), t.res);
+      const ti = document.createElement("td");
+      if (t.img) { const im = document.createElement("img"); im.src = t.img; im.className = "thumb"; im.alt = "Capture du trade"; im.addEventListener("click", () => { lb.querySelector("img").src = t.img; lb.style.display = "flex"; }); ti.appendChild(im); }
+      tr.appendChild(ti);
+      const tn = document.createElement("td"); tn.className = "note";
+      if (t.good) { const d = document.createElement("div"); d.className = "pos"; d.textContent = "✅ " + t.good; tn.appendChild(d); }
+      if (t.bad) { const d = document.createElement("div"); d.className = "neg"; d.textContent = "❌ " + t.bad; tn.appendChild(d); }
+      tr.appendChild(tn);
+      const tx = document.createElement("td"), bx = document.createElement("button"); bx.className = "x"; bx.textContent = "✕"; bx.title = "Supprimer";
+      let armed = false;
+      bx.addEventListener("click", () => {
+        if (!armed) { armed = true; bx.textContent = "Sûr ?"; setTimeout(() => { armed = false; bx.textContent = "✕"; }, 2500); return; }
+        trades = trades.filter(x => x.id !== t.id); write(); render();
+      });
+      tx.appendChild(bx); tr.appendChild(tx); tb.appendChild(tr);
+    });
+  }
+  read(); $("#ts").value = nowLocal(); render();
+})();
+</script>
+</body>
+</html>
